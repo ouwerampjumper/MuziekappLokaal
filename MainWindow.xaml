@@ -1,0 +1,218 @@
+﻿<Window x:Class="MuziekappLokaal.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Muziekspeler" Height="750" Width="1000" Background="#121212" WindowStyle="None" AllowsTransparency="True" ResizeMode="CanResize">
+    <WindowChrome.WindowChrome>
+        <WindowChrome CaptionHeight="30" ResizeBorderThickness="5" />
+    </WindowChrome.WindowChrome>
+
+    <Window.Resources>
+        <!-- Template voor een Album Blokje (Vaste grootte voor overal dezelfde weergave) -->
+        <DataTemplate x:Key="AlbumItemTemplate">
+            <StackPanel Margin="10" Width="130" Height="170" Background="Transparent" Cursor="Hand">
+                <Border CornerRadius="5" ClipToBounds="True" Width="120" Height="120" Background="#1E1E1E">
+                    <Image Source="{Binding CoverImage}" Stretch="UniformToFill" />
+                </Border>
+                <TextBlock Text="{Binding AlbumName}" Foreground="White" FontSize="12" FontWeight="Bold" TextAlignment="Center" Margin="0,5,0,2" TextTrimming="CharacterEllipsis"/>
+                <TextBlock Text="{Binding ArtistName}" Foreground="#AAAAAA" FontSize="11" TextAlignment="Center" TextTrimming="CharacterEllipsis"/>
+            </StackPanel>
+        </DataTemplate>
+    </Window.Resources>
+
+    <Grid>
+        <!-- === STANDAARD UI === -->
+        <Grid x:Name="StandardUI" Visibility="Visible">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <!-- Top Bar -->
+                <RowDefinition Height="*"/>
+                <!-- Content (Home/Library/Details) -->
+                <RowDefinition Height="Auto"/>
+                <!-- Controls -->
+                <RowDefinition Height="50"/>
+                <!-- Navigatie -->
+            </Grid.RowDefinitions>
+
+            <!-- Top Bar: Window Controls & Nu aan het afspelen -->
+            <Border Grid.Row="0" Background="#181818" Padding="10">
+                <Grid>
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Top" WindowChrome.IsHitTestVisibleInChrome="True">
+                        <Button Content="🗕" Width="30" Background="Transparent" Foreground="White" BorderThickness="0" Click="MinimizeButton_Click"/>
+                        <Button Content="🗖" Width="30" Background="Transparent" Foreground="White" BorderThickness="0" Click="MaximizeButton_Click"/>
+                        <Button Content="✕" Width="30" Background="Transparent" Foreground="White" BorderThickness="0" Click="CloseButton_Click"/>
+                    </StackPanel>
+
+                    <Button Background="Transparent" BorderThickness="0" Click="OpenFullscreen_Click" WindowChrome.IsHitTestVisibleInChrome="True" HorizontalAlignment="Center" Cursor="Hand">
+                        <StackPanel>
+                            <TextBlock Text="Nu aan het afspelen" Foreground="#AAAAAA" FontSize="12" HorizontalAlignment="Center"/>
+                            <TextBlock x:Name="TopTitleArtistText" Text="Geen nummer - Selecteer muziek" Foreground="White" FontSize="14" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,5,0,0"/>
+                        </StackPanel>
+                    </Button>
+                </Grid>
+            </Border>
+
+            <!-- CONTENT: Home -->
+            <ScrollViewer x:Name="HomeView" Grid.Row="1" Visibility="Visible" VerticalScrollBarVisibility="Auto" Padding="20">
+                <StackPanel>
+                    <TextBlock Text="Albums" Foreground="White" FontSize="24" FontWeight="Bold" Margin="10,10,0,10"/>
+                    <ListBox x:Name="HomeAlbumsList" ItemsSource="{Binding Library}" ItemTemplate="{StaticResource AlbumItemTemplate}" 
+                             Background="Transparent" BorderThickness="0" ScrollViewer.HorizontalScrollBarVisibility="Hidden" ScrollViewer.VerticalScrollBarVisibility="Disabled"
+                             SelectionChanged="Album_SelectionChanged">
+                        <ListBox.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <VirtualizingStackPanel Orientation="Horizontal"/>
+                            </ItemsPanelTemplate>
+                        </ListBox.ItemsPanel>
+                    </ListBox>
+
+                    <TextBlock Text="Aanbevolen" Foreground="White" FontSize="24" FontWeight="Bold" Margin="10,30,0,10"/>
+                    <ListBox x:Name="HomeRecommendedList" ItemsSource="{Binding Recommended}" ItemTemplate="{StaticResource AlbumItemTemplate}" 
+                             Background="Transparent" BorderThickness="0" ScrollViewer.HorizontalScrollBarVisibility="Hidden" ScrollViewer.VerticalScrollBarVisibility="Disabled"
+                             SelectionChanged="Album_SelectionChanged">
+                        <ListBox.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <VirtualizingStackPanel Orientation="Horizontal"/>
+                            </ItemsPanelTemplate>
+                        </ListBox.ItemsPanel>
+                    </ListBox>
+                </StackPanel>
+            </ScrollViewer>
+
+            <!-- CONTENT: Volledige Bibliotheek -->
+            <ScrollViewer x:Name="LibraryView" Grid.Row="1" Visibility="Collapsed" VerticalScrollBarVisibility="Auto" Padding="20">
+                <StackPanel>
+                    <TextBlock Text="Volledige Bibliotheek (Gesorteerd op Artiest)" Foreground="White" FontSize="20" FontWeight="Bold" Margin="10,0,0,20"/>
+                    <ListBox x:Name="LibraryGridList" ItemsSource="{Binding Library}" ItemTemplate="{StaticResource AlbumItemTemplate}" 
+                             Background="Transparent" BorderThickness="0" ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                             SelectionChanged="Album_SelectionChanged">
+                        <ListBox.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <UniformGrid Columns="6" VerticalAlignment="Top"/>
+                            </ItemsPanelTemplate>
+                        </ListBox.ItemsPanel>
+                    </ListBox>
+                </StackPanel>
+            </ScrollViewer>
+
+            <!-- CONTENT: Album Detail Weergave (Nummerlijst) -->
+            <Grid x:Name="AlbumDetailsView" Grid.Row="1" Visibility="Collapsed" Background="#121212" Margin="20">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <StackPanel Orientation="Horizontal" Grid.Row="0" Margin="0,0,0,20">
+                    <Button Content="🡨 Terug" Background="Transparent" Foreground="#E5A00D" BorderThickness="0" FontSize="16" Click="BackFromAlbum_Click" Cursor="Hand" Margin="0,0,20,0" VerticalAlignment="Top"/>
+
+                    <Border CornerRadius="5" ClipToBounds="True" Width="150" Height="150" Background="#1E1E1E">
+                        <Image x:Name="DetailAlbumArt" Stretch="UniformToFill"/>
+                    </Border>
+
+                    <StackPanel Margin="20,0,0,0" VerticalAlignment="Center">
+                        <TextBlock x:Name="DetailAlbumTitle" Foreground="White" FontSize="32" FontWeight="Bold"/>
+                        <TextBlock x:Name="DetailAlbumArtist" Foreground="#AAAAAA" FontSize="18" Margin="0,5,0,15"/>
+                        <Button Content="▶ Speel Album" Width="120" Height="35" Background="#E5A00D" Foreground="White" BorderThickness="0" HorizontalAlignment="Left" Click="PlayAlbum_Click" Cursor="Hand"/>
+                    </StackPanel>
+                </StackPanel>
+
+                <!-- Lijst met nummers -->
+                <ListBox x:Name="DetailTrackList" Grid.Row="1" Background="Transparent" Foreground="White" BorderThickness="0" MouseDoubleClick="DetailTrackList_MouseDoubleClick">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <StackPanel Orientation="Horizontal" Margin="5">
+                                <TextBlock Text="{Binding TrackNumber}" Width="30" Foreground="#AAAAAA" TextAlignment="Right" Margin="0,0,15,0"/>
+                                <TextBlock Text="{Binding Title}" Foreground="White" FontSize="14"/>
+                            </StackPanel>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+            </Grid>
+
+            <!-- Playback Controls (compact) -->
+            <Border Grid.Row="2" Background="#1E1E1E" Padding="10">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel Orientation="Horizontal" Grid.Column="0" VerticalAlignment="Center">
+                        <TextBlock Text="🔊" Foreground="White" Margin="10,0,5,0"/>
+                        <Slider x:Name="VolumeSlider" Minimum="0" Maximum="1" Value="0.5" Width="100" ValueChanged="VolumeSlider_ValueChanged"/>
+                    </StackPanel>
+
+                    <StackPanel Orientation="Horizontal" Grid.Column="1" HorizontalAlignment="Center">
+                        <Button Content="⏮" Width="35" Height="30" Background="#333" Foreground="White" BorderThickness="0" Margin="5,0" Click="Prev_Click"/>
+                        <Button x:Name="PlayPauseBtn" Content="▶" Width="50" Height="30" Background="#E5A00D" Foreground="White" BorderThickness="0" Margin="5,0" Click="PlayPause_Click"/>
+                        <Button Content="⏭" Width="35" Height="30" Background="#333" Foreground="White" BorderThickness="0" Margin="5,0" Click="Next_Click"/>
+                        <Button x:Name="ShuffleBtn" Content="🔀" Width="35" Height="30" Background="#333" Foreground="White" BorderThickness="0" Margin="5,0" Click="Shuffle_Click"/>
+                    </StackPanel>
+
+                    <StackPanel Orientation="Horizontal" Grid.Column="2" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,10,0">
+                        <TextBlock x:Name="CurrentTimeText" Text="0:00" Foreground="White" Margin="0,0,10,0"/>
+                        <Slider x:Name="ProgressSlider" Width="150" Minimum="0" Maximum="100" PreviewMouseLeftButtonDown="ProgressSlider_MouseDown" PreviewMouseLeftButtonUp="ProgressSlider_MouseUp" ValueChanged="ProgressSlider_ValueChanged"/>
+                        <TextBlock x:Name="TotalTimeText" Text="0:00" Foreground="White" Margin="10,0,0,0"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- Bottom Navigation -->
+            <Grid Grid.Row="3" Background="#121212">
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                    <Button Content="Home" Width="150" Height="35" Background="Transparent" Foreground="White" FontSize="14" BorderThickness="0" Margin="0,0,20,0" Click="NavHome_Click"/>
+                    <Button Content="Volledige Bibliotheek" Width="180" Height="35" Background="Transparent" Foreground="White" FontSize="14" BorderThickness="0" Margin="20,0,20,0" Click="NavLibrary_Click"/>
+                    <Button Content="📂 Map Importeren" Width="150" Height="35" Background="#333" Foreground="White" FontSize="12" BorderThickness="0" Click="OpenFolder_Click"/>
+                </StackPanel>
+            </Grid>
+        </Grid>
+
+        <!-- === FULLSCREEN PLAYER UI === -->
+        <Grid x:Name="FullscreenUI" Visibility="Collapsed" Background="#121212">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="50"/>
+                <RowDefinition Height="*" x:Name="FSRowImage"/>
+                <RowDefinition Height="Auto"/>
+                <!-- Titel en artiest -->
+                <RowDefinition Height="0" x:Name="FSRowQueue"/>
+                <!-- De Wachtrij (standaard verborgen) -->
+                <RowDefinition Height="Auto"/>
+                <!-- Controls -->
+            </Grid.RowDefinitions>
+
+            <!-- Top knoppen -->
+            <Grid Grid.Row="0">
+                <Button Content="↙ Terug naar Bibliotheek" HorizontalAlignment="Left" Margin="20,10" Background="Transparent" Foreground="#E5A00D" BorderThickness="0" FontSize="16" Click="CloseFullscreen_Click" Cursor="Hand"/>
+                <Button Content="☰ Wachtrij" HorizontalAlignment="Right" Margin="20,10" Background="Transparent" Foreground="White" BorderThickness="0" FontSize="16" Click="ToggleFSQueue_Click" Cursor="Hand"/>
+            </Grid>
+
+            <Image x:Name="FS_AlbumArt" Grid.Row="1" Stretch="Uniform" Margin="20"/>
+
+            <StackPanel Grid.Row="2" Margin="0,10,0,20">
+                <TextBlock x:Name="FS_TitleText" Text="Titel" Foreground="White" FontSize="24" FontWeight="Bold" HorizontalAlignment="Center"/>
+                <TextBlock x:Name="FS_ArtistText" Text="Artiest" Foreground="#AAAAAA" FontSize="16" HorizontalAlignment="Center" Margin="0,5,0,0"/>
+            </StackPanel>
+
+            <!-- Wachtrij Lijst -->
+            <ListBox x:Name="FS_QueueList" Grid.Row="3" Background="Transparent" Foreground="White" BorderThickness="0" Margin="40,0,40,20" SelectionChanged="FS_QueueList_SelectionChanged">
+                <ListBox.ItemTemplate>
+                    <DataTemplate>
+                        <StackPanel Orientation="Horizontal" Margin="5">
+                            <TextBlock Text="🎵" Foreground="#AAAAAA" Margin="0,0,10,0" VerticalAlignment="Center"/>
+                            <TextBlock Text="{Binding Title}" Foreground="White" FontSize="14" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+
+            <!-- Controls -->
+            <Border Grid.Row="4" Background="#1E1E1E" Padding="20">
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                    <Button Content="⏮" Width="50" Height="40" Background="#333" Foreground="White" BorderThickness="0" Margin="10,0" Click="Prev_Click"/>
+                    <Button x:Name="FS_PlayPauseBtn" Content="▶" Width="80" Height="40" Background="#E5A00D" Foreground="White" BorderThickness="0" Margin="10,0" Click="PlayPause_Click"/>
+                    <Button Content="⏭" Width="50" Height="40" Background="#333" Foreground="White" BorderThickness="0" Margin="10,0" Click="Next_Click"/>
+                </StackPanel>
+            </Border>
+        </Grid>
+    </Grid>
+</Window>
